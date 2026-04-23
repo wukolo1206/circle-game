@@ -477,6 +477,16 @@ function drawCompass(pos, r_px) {
   ctx.arc(pivot.x, pivot.y, 8, 0, Math.PI * 2);
   ctx.fillStyle = '#444'; ctx.fill();
 
+  // 針尖→筆尖 淡虛線（半徑視覺化）
+  ctx.beginPath();
+  ctx.moveTo(CENTER.x, CENTER.y);
+  ctx.lineTo(pencil.x, pencil.y);
+  ctx.strokeStyle = 'rgba(100, 160, 230, 0.55)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
   // 筆尖圓點（藍色，較大）
   ctx.beginPath();
   ctx.arc(pencil.x, pencil.y, 6, 0, Math.PI * 2);
