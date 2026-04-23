@@ -309,8 +309,8 @@ function showDiameterDiscovery() {
   phase = 'done';
   updateSteps();
   const r = circleR / SCALE;
-  const d = (r * 2).toFixed(1);
   const rStr = r % 1 === 0 ? r.toFixed(0) : r.toFixed(1);
+  const d = (parseFloat(rStr) * 2).toFixed(1);
   document.getElementById('diamFormula').textContent =
     `直徑 = ${rStr} + ${rStr} = ${d} 公分`;
   document.getElementById('diamCard').style.display = 'block';
@@ -616,7 +616,7 @@ function drawDiameterAnim() {
 function drawFinalDiameter() {
   const r_px  = circleR;
   const r_cm  = (r_px / SCALE).toFixed(1);
-  const d_cm  = (r_px / SCALE * 2).toFixed(1);
+  const d_cm  = (parseFloat(r_cm) * 2).toFixed(1);
   const color = '#8833cc';
   const a     = finalDiamAngle;
 
