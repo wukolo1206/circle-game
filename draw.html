@@ -81,6 +81,33 @@
     .btn:hover { opacity: .85; }
     .btn-blue  { background: #1a5fa8; }
     .btn-green { background: #27ae60; }
+
+    /* 左右版面 */
+    .main-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+    }
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+    }
+    @media (min-width: 680px) {
+      .main-wrap {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 18px;
+        width: auto;
+      }
+      .right-panel { width: 300px; align-items: stretch; }
+      .card, .done-card, .prog-wrap { max-width: 100%; width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -88,23 +115,29 @@
 <h1>🧭 圓規練習</h1>
 <a class="nav-link" href="index.html">← 圓的秘密</a>
 
-<div class="q-row">
-  <span id="qCount">第 1 題，共 5 題</span>
-  <div class="stars" id="stars"></div>
+<div class="main-wrap">
+
+  <canvas id="canvas" width="320" height="320"></canvas>
+
+  <div class="right-panel">
+    <div class="q-row">
+      <span id="qCount">第 1 題，共 5 題</span>
+      <div class="stars" id="stars"></div>
+    </div>
+
+    <div class="card">
+      <div class="inst-main" id="instMain">—</div>
+      <div class="inst-sub"  id="instSub">—</div>
+    </div>
+
+    <div class="prog-wrap" id="progWrap" style="visibility:hidden">
+      <div class="prog-bar" id="progBar" style="width:0%"></div>
+    </div>
+
+    <div id="doneCard" style="display:none"></div>
+  </div>
+
 </div>
-
-<div class="card">
-  <div class="inst-main" id="instMain">—</div>
-  <div class="inst-sub"  id="instSub">—</div>
-</div>
-
-<canvas id="canvas" width="320" height="320"></canvas>
-
-<div class="prog-wrap" id="progWrap" style="visibility:hidden">
-  <div class="prog-bar" id="progBar" style="width:0%"></div>
-</div>
-
-<div id="doneCard" style="display:none"></div>
 
 <script>
 // ── 常數 ──────────────────────────────────────────────────────
