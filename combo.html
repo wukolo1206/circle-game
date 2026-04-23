@@ -208,17 +208,20 @@
 
       // 2. Circle r=4 inside square, find side length
       {
-        given: '圓的半徑是 4 公分，\n圓剛好裝進正方形裡',
-        question: '正方形的邊長是幾公分？',
+        given: '圓的半徑是 4 公分，圓剛好裝進正方形裡',
+        question: '正方形一條邊長是幾公分？',
         answer: 8,
-        hint: '邊長 = 直徑 = 半徑 × 2\n= 4 × 2 = 8 公分',
+        hint: '一條邊 = 直徑 = 半徑 × 2\n= 4 × 2 = 8 公分',
         draw(t) {
           const rPx = 70, cx = 135, cy = 115;
           clr();
-          // Square
+          // Square — highlight bottom edge
           const sq = rPx;
-          ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+          ctx.strokeStyle = '#ccc'; ctx.lineWidth = 2;
           ctx.strokeRect(cx - sq, cy - sq, sq * 2, sq * 2);
+          // Bottom edge highlighted in question colour
+          const edgeColor = t < 0 ? '#9b59b6' : '#51cf66';
+          seg(cx - rPx, cy + rPx, cx + rPx, cy + rPx, edgeColor, 4);
           // Circle
           circ(cx, cy, rPx, '#4a6cf7', 3);
           dot(cx, cy, 5, '#4a6cf7');
@@ -227,12 +230,12 @@
           dot(cx + rPx, cy, 4, '#ff922b');
           txt('半徑 4', cx + rPx / 2, cy - 14, '#ff922b', 13);
 
-          // Bottom edge question
+          // Bottom edge bracket
           const bY = cy + rPx + 18;
           if (t < 0) {
-            measureBracket(cx - rPx, cx + rPx, bY, '#bbb', '？公分');
+            measureBracket(cx - rPx, cx + rPx, bY, '#9b59b6', '一條邊 ＝ ？公分');
           } else {
-            measureBracket(cx - rPx, cx + rPx, bY, '#51cf66', '8 公分');
+            measureBracket(cx - rPx, cx + rPx, bY, '#51cf66', '一條邊 ＝ 8 公分');
             if (t > 0.4) {
               ctx.globalAlpha = easeOut((t - 0.4) / 0.5);
               // Full diameter highlighted
@@ -289,14 +292,14 @@
         answer: 18,
         hint: '6 + 6 + 6 = 18 公分',
         draw(t) {
-          const rPx = 40, c1x = 45, c2x = 135, c3x = 225, cy = 108;
+          const rPx = 40, c1x = 45, c2x = 125, c3x = 205, cy = 108;
           clr();
           [c1x, c2x, c3x].forEach(cx => {
             circ(cx, cy, rPx, '#4a6cf7', 3);
             dot(cx, cy, 5, '#4a6cf7');
-            seg(cx - rPx, cy - 8, cx + rPx, cy - 8, '#ff922b', 2);
-            dot(cx - rPx, cy - 8, 3, '#ff922b');
-            dot(cx + rPx, cy - 8, 3, '#ff922b');
+            seg(cx - rPx, cy, cx + rPx, cy, '#ff922b', 2);
+            dot(cx - rPx, cy, 3, '#ff922b');
+            dot(cx + rPx, cy, 3, '#ff922b');
           });
           txt('直徑 6', c1x, cy - rPx - 12, '#ff922b', 12);
           txt('直徑 6', c2x, cy - rPx - 12, '#ff922b', 12);
@@ -311,8 +314,8 @@
               ctx.globalAlpha = easeOut((t - 0.4) / 0.5);
               const cols = ['#e06b00', '#1a6ab8', '#1a8a3a'];
               [c1x, c2x, c3x].forEach((cx, i) => {
-                seg(cx - rPx, cy + 10, cx + rPx, cy + 10, cols[i], 4);
-                txt('6', cx, cy + 24, cols[i], 14);
+                seg(cx - rPx, cy, cx + rPx, cy, cols[i], 4);
+                txt('6', cx, cy + 16, cols[i], 14);
               });
               ctx.globalAlpha = 1;
             }
