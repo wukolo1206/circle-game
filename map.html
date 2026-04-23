@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>圓規量路</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f0f4ff; min-height: 100vh; }
+
+    .nav { display: flex; justify-content: space-between; align-items: center;
+           padding: 10px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+    .nav a { font-size: 14px; color: #666; text-decoration: none; }
+    .nav h2 { font-size: 16px; color: #333; font-weight: bold; }
+
+    .wrap { max-width: 620px; margin: 0 auto; padding: 14px; display: flex;
+            flex-direction: column; align-items: center; gap: 12px; }
+
+    .canvas-wrap { background: #fff; border-radius: 16px; padding: 12px;
+                   box-shadow: 0 2px 10px rgba(74,108,247,0.12); }
+    canvas { display: block; }
+
+    .card { background: #fff; border-radius: 16px; padding: 14px 18px;
+            box-shadow: 0 2px 10px rgba(74,108,247,0.12); width: 100%; }
+
+    .status { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 12px;
+              min-height: 28px; }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn { flex: 1; border: none; border-radius: 12px; font-size: 19px; font-weight: bold;
+           padding: 15px 12px; cursor: pointer; transition: opacity 0.1s;
+           -webkit-tap-highlight-color: transparent; }
+    .btn:active { opacity: 0.8; }
+    .btn.blue  { background: #4a6cf7; color: #fff; }
+    .btn.ora   { background: #ff922b; color: #fff; }
+    .btn.green { background: #51cf66; color: #fff; }
+    .btn.gray  { background: #e5e5e5; color: #555; }
+    .btn:disabled { background: #ccc !important; color: #999; cursor: default; }
+
+    .result { background: #edfff5; border: 2px solid #51cf66; border-radius: 14px;
+              padding: 14px 18px; width: 100%; display: none; }
+    .result.show { display: block; }
+    .result.wrong { background: #fff5f5; border-color: #ff6b6b; }
+    .r-title { font-size: 20px; font-weight: bold; color: #2f9e44; }
+    .result.wrong .r-title { color: #c92a2a; }
+    .r-sub { font-size: 15px; color: #555; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="combo.html">← 組合圖形</a>
+    <h2>圓規量路</h2>
+    <a href="index.html">圓的秘密 →</a>
+  </div>
+
+  <div class="wrap">
+    <div class="canvas-wrap">
+      <canvas id="cvs" width="280" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="status" id="statusText"></div>
+      <div class="btn-row" id="btnRow"></div>
+    </div>
+    <div class="result" id="result">
+      <div class="r-title" id="rTitle"></div>
+      <div class="r-sub" id="rSub"></div>
+    </div>
+  </div>
+
+  <script>
+    const cvs = document.getElementById('cvs');
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+
+    // ── Grid config ───────────────────────────────────────────
+    const G = 35;   // px per grid unit
+    const OX = 10, OY = 10;
+
+    function px(col, row) {
+      return { x: OX + col * G + G / 2, y: OY + row * G + G / 2 };
+    }
+
+    // ── Paths ─────────────────────────────────────────────────
+    // Path A: straight, 6 hops
+    const PA = [[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2]];
+    // Path B: detour via bottom, 10 hops
+    const PB = [[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[6,3],[6,2]];
+
+    const CA = '#4a6cf7';  // blue for Path A
+    const CB = '#e06b00';  // orange for Path B
+
+    // ── State ─────────────────────────────────────────────────
+    let phase = 'intro';
+    let hopA = 0, hopB = 0;
+    let cpx = 0, cpy = 0; // compass pixel position
+    let animating = false, rafId = null;
+    const ADUR = 220; // animation duration ms
+
+    // ── Drawing ───────────────────────────────────────────────
+    function drawBg() {
+      // Light grid
+      ctx.strokeStyle = '#e8edf8';
+      ctx.lineWidth = 1;
+      for (let c = 0; c <= 7; c++) {
+        const x = OX + c * G;
+        ctx.beginPath(); ctx.moveTo(x, OY); ctx.lineTo(x, OY + 5 * G); ctx.stroke();
+      }
+      for (let r = 0; r <= 5; r++) {
+        const y = OY + r * G;
+        ctx.beginPath(); ctx.moveTo(OX, y); ctx.lineTo(OX + 7 * G, y); ctx.stroke();
+      }
+      // Scale label
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('1格＝1公分', OX, H - 2);
+    }
+
+    function drawRoad(path, color, dash) {
+      ctx.beginPath();
+      ctx.setLineDash(dash ? [5, 4] : []);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      path.forEach(([c, r], i) => {
+        const p = px(c, r);
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawDot(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function drawCompassIcon(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, 11, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function drawBuilding(col, row, label, color) {
+      const p = px(col, row);
+      ctx.fillStyle = color + '28';
+      ctx.fillRect(p.x - 15, p.y - 13, 30, 26);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - 15, p.y - 13, 30, 26);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, p.x, p.y);
+    }
+
+    function drawLabel(text, x, y, color) {
+      ctx.fillStyle = color;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, W, H);
+      drawBg();
+
+      if (phase === 'intro') {
+        drawRoad(PA, CA, false);
+        drawRoad(PB, CB, true);
+        const ma = px(3, 2);
+        drawLabel('甲路', ma.x, ma.y - 16, CA);
+        const mb = px(3, 4);
+        drawLabel('乙路', mb.x, mb.y + 16, CB);
+
+      } else {
+        // Path A always solid
+        drawRoad(PA, CA + '88', false);
+        // Path B shows when measuring/done B
+        const showB = ['measure_b','done_b','compare','done'].includes(phase);
+        if (showB) drawRoad(PB, CB + '88', false);
+
+        // Hop dots for A
+        for (let i = 1; i <= hopA && i < PA.length; i++) {
+          const p = px(PA[i][0], PA[i][1]);
+          drawDot(p.x, p.y, CA);
+        }
+        // Hop dots for B
+        for (let i = 1; i <= hopB && i < PB.length; i++) {
+          const p = px(PB[i][0], PB[i][1]);
+          drawDot(p.x, p.y, CB);
+        }
+
+        // Compass
+        if (['measure_a','done_a'].includes(phase)) drawCompassIcon(cpx, cpy, CA);
+        if (['measure_b','done_b'].includes(phase)) drawCompassIcon(cpx, cpy, CB);
+
+        // Distance labels
+        if (['done_a','measure_b','done_b','compare','done'].includes(phase)) {
+          const m = px(3, 2);
+          drawLabel('甲路 ' + (PA.length - 1) + ' 公分', m.x, m.y - 15, CA);
+        }
+        if (['done_b','compare','done'].includes(phase)) {
+          const m = px(3, 4);
+          drawLabel('乙路 ' + (PB.length - 1) + ' 公分', m.x, m.y + 15, CB);
+        }
+      }
+
+      // Always draw buildings on top
+      drawBuilding(0, 2, '學校', '#2f9e44');
+      drawBuilding(6, 2, '圖書館', '#7c3aed');
+    }
+
+    // ── Animate compass ───────────────────────────────────────
+    function animTo(tx, ty, cb) {
+      const fx = cpx, fy = cpy;
+      const t0 = performance.now();
+      animating = true;
+      function tick(ts) {
+        const t = Math.min(1, (ts - t0) / ADUR);
+        const e = 1 - Math.pow(1 - t, 2);
+        cpx = fx + (tx - fx) * e;
+        cpy = fy + (ty - fy) * e;
+        redraw();
+        if (t < 1) rafId = requestAnimationFrame(tick);
+        else { cpx = tx; cpy = ty; animating = false; redraw(); cb && cb(); }
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    // ── UI update ─────────────────────────────────────────────
+    function setUI(statusHTML, buttons) {
+      document.getElementById('statusText').innerHTML = statusHTML;
+      const row = document.getElementById('btnRow');
+      row.innerHTML = '';
+      buttons.forEach(({ label, cls, onclick, disabled }) => {
+        const b = document.createElement('button');
+        b.className = 'btn ' + cls;
+        b.textContent = label;
+        b.onclick = onclick;
+        if (disabled) b.disabled = true;
+        row.appendChild(b);
+      });
+    }
+
+    // ── Phase handlers ────────────────────────────────────────
+    function startMeasureA() {
+      phase = 'measure_a';
+      const p = px(PA[0][0], PA[0][1]);
+      cpx = p.x; cpy = p.y;
+      updateUI(); redraw();
+    }
+
+    function stepA() {
+      if (animating || hopA >= PA.length - 1) return;
+      hopA++;
+      const p = px(PA[hopA][0], PA[hopA][1]);
+      animTo(p.x, p.y, () => {
+        if (hopA >= PA.length - 1) { phase = 'done_a'; }
+        updateUI(); redraw();
+      });
+    }
+
+    function startMeasureB() {
+      phase = 'measure_b';
+      hopB = 0;
+      const p = px(PB[0][0], PB[0][1]);
+      cpx = p.x; cpy = p.y;
+      updateUI(); redraw();
+    }
+
+    function stepB() {
+      if (animating || hopB >= PB.length - 1) return;
+      hopB++;
+      const p = px(PB[hopB][0], PB[hopB][1]);
+      animTo(p.x, p.y, () => {
+        if (hopB >= PB.length - 1) { phase = 'done_b'; }
+        updateUI(); redraw();
+      });
+    }
+
+    function showCompare() {
+      phase = 'compare';
+      updateUI(); redraw();
+    }
+
+    function answer(choice) {
+      phase = 'done';
+      const lenA = PA.length - 1, lenB = PB.length - 1;
+      const correct = lenA < lenB ? 'a' : 'b';
+      const el = document.getElementById('result');
+      const shorter = correct === 'a' ? '甲路' : '乙路';
+      if (choice === correct) {
+        el.className = 'result show';
+        document.getElementById('rTitle').textContent = '✓ 答對了！' + shorter + '比較近';
+      } else {
+        el.className = 'result show wrong';
+        document.getElementById('rTitle').textContent = '× ' + shorter + '才是比較近的路';
+      }
+      document.getElementById('rSub').textContent =
+        '甲路 ' + lenA + ' 公分，乙路 ' + lenB + ' 公分';
+      updateUI(); redraw();
+    }
+
+    function updateUI() {
+      const lenA = PA.length - 1, lenB = PB.length - 1;
+      switch (phase) {
+        case 'intro':
+          setUI('從<b>學校</b>到<b>圖書館</b>，哪條路比較近？', [
+            { label: '開始量甲路 →', cls: 'blue', onclick: startMeasureA }
+          ]);
+          break;
+        case 'measure_a':
+          setUI('量甲路（藍色）：已走 <b>' + hopA + '</b> 步', [
+            { label: '下一步 →', cls: 'blue', onclick: stepA, disabled: hopA >= lenA }
+          ]);
+          break;
+        case 'done_a':
+          setUI('甲路：<b style="color:#4a6cf7">' + lenA + ' 公分</b>　量好了！', [
+            { label: '開始量乙路 →', cls: 'ora', onclick: startMeasureB }
+          ]);
+          break;
+        case 'measure_b':
+          setUI('量乙路（橙色）：已走 <b>' + hopB + '</b> 步', [
+            { label: '下一步 →', cls: 'ora', onclick: stepB, disabled: hopB >= lenB }
+          ]);
+          break;
+        case 'done_b':
+          setUI('甲路 <b style="color:#4a6cf7">' + lenA + '</b> 公分　乙路 <b style="color:#e06b00">' + lenB + '</b> 公分', [
+            { label: '來比一比 →', cls: 'green', onclick: showCompare }
+          ]);
+          break;
+        case 'compare':
+          setUI('哪條路比較近？', [
+            { label: '甲路比較近', cls: 'blue', onclick: () => answer('a') },
+            { label: '乙路比較近', cls: 'ora',  onclick: () => answer('b') }
+          ]);
+          break;
+        case 'done':
+          setUI('完成！', [
+            { label: '再玩一次', cls: 'blue', onclick: () => location.reload() }
+          ]);
+          break;
+      }
+    }
+
+    // ── Start ─────────────────────────────────────────────────
+    redraw();
+    updateUI();
+  </script>
+</body>
+</html>
