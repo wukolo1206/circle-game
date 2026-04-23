@@ -234,8 +234,6 @@ function confirmAim() {
   coverage.clear();
   lastAngle  = null;
   isDragging = false;
-  dragPos    = null;
-  lastPos    = null;
 
   document.getElementById('progWrap').style.visibility = 'visible';
   document.getElementById('progBar').style.width = '0%';
@@ -418,7 +416,7 @@ function render() {
   ctx.fillText('圓心（針尖）', CENTER.x + 10, CENTER.y);
 
   // 圓規臂
-  const compassPos = phase === 'aim'   ? dragPos :
+  const compassPos = phase === 'aim'   ? (dragPos || lastPos) :
                      phase === 'trace' ? (dragPos || lastPos) : null;
   const compassR   = phase === 'aim'   ? aimR : targetR;
   if (compassPos && compassR > 8) drawCompass(compassPos, compassR);
