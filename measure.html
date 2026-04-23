@@ -161,10 +161,10 @@
     // ── Question bank ──────────────────────────────────────────────
     const ALL_Q = [];
     [6, 8, 10, 12, 14, 16, 18, 20, 24].forEach(d =>
-      ALL_Q.push({ type: 'r_from_d', r: d / 2, d })
+      ALL_Q.push({ type: 'r_from_d', r: d / 2, d, answer: d / 2 })
     );
     [3, 4, 5, 6, 7, 8, 9, 10, 12].forEach(r =>
-      ALL_Q.push({ type: 'd_from_r', r, d: r * 2 })
+      ALL_Q.push({ type: 'd_from_r', r, d: r * 2, answer: r * 2 })
     );
 
     function shuffle(a) {
