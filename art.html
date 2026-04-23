@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>圓規創作</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f0f4ff; min-height: 100vh; }
+
+    .nav { display: flex; justify-content: space-between; align-items: center;
+           padding: 10px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+    .nav a { font-size: 14px; color: #666; text-decoration: none; }
+    .nav h2 { font-size: 16px; color: #333; font-weight: bold; }
+
+    .main { display: flex; flex-direction: column; align-items: center;
+            padding: 12px; gap: 12px; max-width: 720px; margin: 0 auto; }
+    @media (min-width: 600px) {
+      .main { flex-direction: row; align-items: flex-start; padding: 20px; gap: 20px; }
+    }
+
+    .canvas-wrap { background: #fff; border-radius: 16px; padding: 12px;
+                   box-shadow: 0 2px 10px rgba(74,108,247,0.12); flex-shrink: 0;
+                   touch-action: none; user-select: none; }
+    canvas { display: block; cursor: crosshair; touch-action: none; }
+
+    .panel { flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; }
+
+    .p-card { background: #fff; border-radius: 16px; padding: 14px 16px;
+              box-shadow: 0 2px 10px rgba(74,108,247,0.12); }
+    .p-label { font-size: 13px; font-weight: bold; color: #888;
+               margin-bottom: 10px; letter-spacing: 0.5px; }
+
+    /* Compass status */
+    .compass-status { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .compass-icon { width: 42px; height: 42px; flex-shrink: 0; }
+    .compass-text { font-size: 15px; color: #333; }
+    .compass-r { font-size: 22px; font-weight: bold; }
+
+    /* Radius selector */
+    .r-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .r-btn { flex: 1; min-width: 54px; border: 2px solid #dde3ff; background: #fff;
+             border-radius: 12px; font-size: 16px; font-weight: bold; color: #555;
+             padding: 10px 6px; cursor: pointer; text-align: center;
+             transition: background 0.15s, border-color 0.15s;
+             -webkit-tap-highlight-color: transparent; }
+    .r-btn:active { background: #e8ecff; }
+    .r-btn.on { background: #4a6cf7; color: #fff; border-color: #4a6cf7; }
+
+    /* Color selector */
+    .c-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .c-dot { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent;
+             transition: transform 0.1s; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .c-dot:active { transform: scale(0.9); }
+    .c-dot.on { border-color: #333; transform: scale(1.15); }
+
+    /* Action buttons */
+    .act-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .act-btn { flex: 1; border: none; border-radius: 12px; font-size: 16px; font-weight: bold;
+               padding: 12px 8px; cursor: pointer; transition: opacity 0.1s;
+               -webkit-tap-highlight-color: transparent; }
+    .act-btn:active { opacity: 0.75; }
+    .act-btn.insp { background: #ffd43b; color: #6d4c00; }
+    .act-btn.undo { background: #e9ecef; color: #444; }
+    .act-btn.clr  { background: #ffe3e3; color: #c92a2a; }
+    .act-btn.save { background: #d3f9d8; color: #1a6a2a; }
+
+    .hint-text { font-size: 13px; color: #aaa; text-align: center; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="map.html">← 圓規量路</a>
+    <h2>圓規創作</h2>
+    <a href="index.html">圓的秘密 →</a>
+  </div>
+
+  <div class="main">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="cvs" width="280" height="280"></canvas>
+    </div>
+
+    <div class="panel">
+      <!-- Compass status -->
+      <div class="p-card">
+        <div class="compass-status">
+          <canvas class="compass-icon" id="compassIcon" width="42" height="42"></canvas>
+          <div class="compass-text">
+            圓規開口＝<span class="compass-r" id="rDisplay">1</span> 公分
+          </div>
+        </div>
+
+        <div class="p-label">半徑（選圓規開口）</div>
+        <div class="r-row" id="rRow"></div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-label">顏色</div>
+        <div class="c-row" id="cRow"></div>
+      </div>
+
+      <div class="p-card">
+        <div class="act-row">
+          <button class="act-btn insp" onclick="inspire()">💡 靈感</button>
+          <button class="act-btn undo" onclick="undo()">↩ 上一步</button>
+          <button class="act-btn clr" onclick="clearAll()">🗑 清除</button>
+          <button class="act-btn save" onclick="saveImg()">💾 存圖</button>
+        </div>
+        <div class="hint-text">點畫布放圓 ✦ 最多可畫 50 個</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cvs  = document.getElementById('cvs');
+    const ctx  = cvs.getContext('2d');
+    const icvs = document.getElementById('compassIcon');
+    const ictx = icvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+
+    const SCALE  = 40;   // px per cm
+    const RADII  = [1, 1.5, 2, 3, 4]; // cm
+    const COLORS = ['#4a6cf7','#e06b00','#e64980','#2f9e44','#7c3aed','#1098ad','#f59f00','#495057'];
+    const MAX    = 50;
+
+    let curR     = 1;         // cm
+    let curColor = COLORS[0];
+    let circles  = [];        // {cx, cy, r, color}
+    let preview  = null;      // {cx, cy} | null
+
+    // ── Build controls ────────────────────────────────────────
+    const rRow = document.getElementById('rRow');
+    RADII.forEach(r => {
+      const b = document.createElement('button');
+      b.className = 'r-btn' + (r === curR ? ' on' : '');
+      b.textContent = r + '㎝';
+      b.onclick = () => selectR(r);
+      b.dataset.r = r;
+      rRow.appendChild(b);
+    });
+
+    const cRow = document.getElementById('cRow');
+    COLORS.forEach((c, i) => {
+      const d = document.createElement('div');
+      d.className = 'c-dot' + (i === 0 ? ' on' : '');
+      d.style.background = c;
+      d.onclick = () => selectColor(c);
+      d.dataset.c = c;
+      cRow.appendChild(d);
+    });
+
+    function selectR(r) {
+      curR = r;
+      document.getElementById('rDisplay').textContent = r;
+      rRow.querySelectorAll('.r-btn').forEach(b =>
+        b.classList.toggle('on', parseFloat(b.dataset.r) === r));
+      drawCompassIcon();
+    }
+
+    function selectColor(c) {
+      curColor = c;
+      cRow.querySelectorAll('.c-dot').forEach(d =>
+        d.classList.toggle('on', d.dataset.c === c));
+      drawCompassIcon();
+    }
+
+    // ── Small compass icon ────────────────────────────────────
+    function drawCompassIcon() {
+      const iW = icvs.width, iH = icvs.height;
+      ictx.clearRect(0, 0, iW, iH);
+      const cx = iW / 2, cy = iH / 2 + 4;
+      const ARM = 16, OPEN = Math.min(curR / 4 * 0.8, 0.8); // radians half-angle
+      // Left arm (needle)
+      ictx.beginPath();
+      ictx.moveTo(cx, cy - ARM);
+      ictx.lineTo(cx - Math.sin(OPEN) * ARM, cy + Math.cos(OPEN) * ARM - ARM);
+      ictx.strokeStyle = '#666'; ictx.lineWidth = 2; ictx.stroke();
+      // Right arm (pencil)
+      ictx.beginPath();
+      ictx.moveTo(cx, cy - ARM);
+      ictx.lineTo(cx + Math.sin(OPEN) * ARM, cy + Math.cos(OPEN) * ARM - ARM);
+      ictx.strokeStyle = curColor; ictx.lineWidth = 2; ictx.stroke();
+      // Hinge dot
+      ictx.beginPath();
+      ictx.arc(cx, cy - ARM, 3, 0, Math.PI * 2);
+      ictx.fillStyle = '#333'; ictx.fill();
+    }
+
+    // ── Canvas drawing ────────────────────────────────────────
+    function drawGrid() {
+      ctx.strokeStyle = '#eff1f8';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= W; x += SCALE) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y <= H; y += SCALE) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+      // Scale bar bottom-right
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(W - 46, H - 10, SCALE, 2);
+      ctx.fillStyle = '#bbb';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('1 公分', W - 46 + SCALE / 2, H - 12);
+    }
+
+    function drawOneCircle(c, ghost) {
+      const rPx = c.r * SCALE;
+      ctx.beginPath();
+      ctx.arc(c.cx, c.cy, rPx, 0, Math.PI * 2);
+      if (ghost) {
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = c.color + 'aa';
+        ctx.lineWidth = 2;
+      } else {
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.color + '18';
+        ctx.fill();
+        ctx.strokeStyle = c.color;
+        ctx.lineWidth = 2.5;
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(c.cx, c.cy, ghost ? 3 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = ghost ? c.color + 'aa' : c.color;
+      ctx.fill();
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, W, H);
+      drawGrid();
+      circles.forEach(c => drawOneCircle(c, false));
+      if (preview) {
+        drawOneCircle({ ...preview, r: curR, color: curColor }, true);
+      }
+    }
+
+    // ── User actions ──────────────────────────────────────────
+    function placeCircle(cx, cy) {
+      if (circles.length >= MAX) return;
+      circles.push({ cx, cy, r: curR, color: curColor });
+      preview = null;
+      redraw();
+    }
+
+    function undo() {
+      circles.pop();
+      redraw();
+    }
+
+    function clearAll() {
+      if (circles.length === 0) return;
+      if (confirm('清除所有圓嗎？')) { circles = []; preview = null; redraw(); }
+    }
+
+    function saveImg() {
+      const tmp = document.createElement('canvas');
+      tmp.width = W; tmp.height = H;
+      const tc = tmp.getContext('2d');
+      tc.fillStyle = '#fff';
+      tc.fillRect(0, 0, W, H);
+      tc.drawImage(cvs, 0, 0);
+      const link = document.createElement('a');
+      link.download = '我的圓規作品.png';
+      link.href = tmp.toDataURL();
+      link.click();
+    }
+
+    function inspire() {
+      circles = [];
+      const cx = W / 2, cy = H / 2;
+      const S = SCALE;
+      // Center large circle
+      circles.push({ cx, cy, r: 3, color: COLORS[0] });
+      // 6 medium circles on the ring
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3;
+        circles.push({ cx: cx + Math.cos(a) * 3 * S, cy: cy + Math.sin(a) * 3 * S,
+                       r: 1.5, color: COLORS[i % 4 + 1] });
+      }
+      // Small circles between them
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3 + Math.PI / 6;
+        circles.push({ cx: cx + Math.cos(a) * 2 * S, cy: cy + Math.sin(a) * 2 * S,
+                       r: 1, color: COLORS[(i + 2) % 4 + 1] });
+      }
+      preview = null;
+      redraw();
+    }
+
+    // ── Input events ──────────────────────────────────────────
+    function canvasPos(e) {
+      const r = cvs.getBoundingClientRect();
+      const scaleX = W / r.width, scaleY = H / r.height;
+      return { cx: (e.clientX - r.left) * scaleX, cy: (e.clientY - r.top) * scaleY };
+    }
+
+    function touchPos(e) {
+      const t = e.touches[0] || e.changedTouches[0];
+      const r = cvs.getBoundingClientRect();
+      const scaleX = W / r.width, scaleY = H / r.height;
+      return { cx: (t.clientX - r.left) * scaleX, cy: (t.clientY - r.top) * scaleY };
+    }
+
+    // Mouse
+    cvs.addEventListener('mousemove', e => {
+      preview = canvasPos(e);
+      redraw();
+    });
+    cvs.addEventListener('mouseleave', () => { preview = null; redraw(); });
+    cvs.addEventListener('click', e => { placeCircle(...Object.values(canvasPos(e))); });
+
+    // Touch
+    cvs.addEventListener('touchstart', e => {
+      e.preventDefault();
+      preview = touchPos(e);
+      redraw();
+    }, { passive: false });
+
+    cvs.addEventListener('touchmove', e => {
+      e.preventDefault();
+      preview = touchPos(e);
+      redraw();
+    }, { passive: false });
+
+    cvs.addEventListener('touchend', e => {
+      e.preventDefault();
+      const pos = touchPos(e);
+      placeCircle(pos.cx, pos.cy);
+    }, { passive: false });
+
+    // ── Init ─────────────────────────────────────────────────
+    drawCompassIcon();
+    redraw();
+  </script>
+</body>
+</html>
