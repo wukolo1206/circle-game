@@ -299,7 +299,7 @@
         drawSegment(CX, CY, CX + R_PX, CY, '#ff922b', 5);
         drawDot(CX + R_PX, CY, 5, '#ff922b');
 
-        const leftP = Math.min(1, easeOut(t / 0.5));
+        const leftP = t < 0.5 ? easeOut(t / 0.5) : 1;
         const leftX = CX - R_PX * leftP;
         drawSegment(CX, CY, leftX, CY, '#51cf66', 5);
         if (leftP > 0.95) drawDot(CX - R_PX, CY, 5, '#51cf66');
