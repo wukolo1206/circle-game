@@ -121,6 +121,32 @@
     .btn-green { background: #27ae60; }
     .btn-blue  { background: #1a5fa8; }
     .btn-red   { background: #c0392b; }
+
+    /* 左右版面 */
+    .main-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+    }
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+    }
+    @media (min-width: 680px) {
+      body { align-items: flex-start; justify-content: center; }
+      .main-wrap {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 18px;
+      }
+      .right-panel { width: 320px; align-items: stretch; }
+      .card, .discover-card, .r-tags { max-width: 100%; width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -128,37 +154,43 @@
 <h1>🔍 圓的秘密</h1>
 <a href="draw.html" style="font-size:0.9rem;color:#1a5fa8;text-decoration:none;background:#e8f4fd;padding:4px 14px;border-radius:20px;border:1px solid #b0c8e8">→ 圓規練習</a>
 
-<div class="steps">
-  <div class="step active" id="s1">① 畫圓</div>
-  <div class="step"        id="s2">② 半徑</div>
-  <div class="step"        id="s3">③ 直徑</div>
-</div>
+<div class="main-wrap">
 
-<div class="card">
-  <div class="inst-main" id="instMain">從<em>中心點</em>往外拖曳，畫一個圓！</div>
-  <div class="inst-sub"  id="instSub">圓規的開口就是半徑</div>
-</div>
+  <canvas id="canvas" width="320" height="320"></canvas>
 
-<canvas id="canvas" width="320" height="320"></canvas>
+  <div class="right-panel">
+    <div class="steps">
+      <div class="step active" id="s1">① 畫圓</div>
+      <div class="step"        id="s2">② 半徑</div>
+      <div class="step"        id="s3">③ 直徑</div>
+    </div>
 
-<div class="r-tags" id="rTags"></div>
+    <div class="card">
+      <div class="inst-main" id="instMain">從<em>中心點</em>往外拖曳，畫一個圓！</div>
+      <div class="inst-sub"  id="instSub">圓規的開口就是半徑</div>
+    </div>
 
-<!-- 半徑發現卡 -->
-<div class="discover-card" id="radiusCard">
-  <div class="emoji">✨</div>
-  <h2 id="radiusTitle">發現了！</h2>
-  <p id="radiusBody">不管點哪裡，到圓心的距離都一樣！</p>
-  <div class="formula" id="radiusFormula">半徑 = ? 公分</div>
-  <button class="btn btn-blue" onclick="startDiameter()">繼續看直徑 →</button>
-</div>
+    <div class="r-tags" id="rTags"></div>
 
-<!-- 直徑發現卡 -->
-<div class="discover-card" id="diamCard">
-  <div class="emoji">🎉</div>
-  <h2>直徑 = 半徑 × 2</h2>
-  <p>直徑是通過圓心、連接圓上兩點的最長線段。<br>它剛好等於<strong>兩個半徑</strong>加起來！</p>
-  <div class="formula" id="diamFormula">直徑 = ? + ? = ? 公分</div>
-  <button class="btn btn-green" onclick="resetAll()">再畫一個圓 🔄</button>
+    <!-- 半徑發現卡 -->
+    <div class="discover-card" id="radiusCard">
+      <div class="emoji">✨</div>
+      <h2 id="radiusTitle">發現了！</h2>
+      <p id="radiusBody">不管點哪裡，到圓心的距離都一樣！</p>
+      <div class="formula" id="radiusFormula">半徑 = ? 公分</div>
+      <button class="btn btn-blue" onclick="startDiameter()">繼續看直徑 →</button>
+    </div>
+
+    <!-- 直徑發現卡 -->
+    <div class="discover-card" id="diamCard">
+      <div class="emoji">🎉</div>
+      <h2>直徑 = 半徑 × 2</h2>
+      <p>直徑是通過圓心、連接圓上兩點的最長線段。<br>它剛好等於<strong>兩個半徑</strong>加起來！</p>
+      <div class="formula" id="diamFormula">直徑 = ? + ? = ? 公分</div>
+      <button class="btn btn-green" onclick="resetAll()">再畫一個圓 🔄</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
