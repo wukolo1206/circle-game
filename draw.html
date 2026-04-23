@@ -97,7 +97,7 @@
       gap: 9px;
       width: 100%;
     }
-    @media (min-width: 680px) {
+    @media (min-width: 600px) {
       .main-wrap {
         flex-direction: row;
         align-items: flex-start;
@@ -105,7 +105,7 @@
         gap: 18px;
         width: auto;
       }
-      .right-panel { width: 300px; align-items: stretch; }
+      .right-panel { width: 280px; align-items: stretch; }
       .card, .done-card, .prog-wrap { max-width: 100%; width: 100%; }
     }
   </style>
@@ -448,10 +448,9 @@ function render() {
   ctx.textBaseline = 'middle';
   ctx.fillText('圓心（針尖）', CENTER.x + 10, CENTER.y);
 
-  // 圓規臂
-  const compassPos = phase === 'aim'   ? (dragPos || lastPos) :
-                     phase === 'trace' ? (dragPos || lastPos) : null;
-  const compassR   = phase === 'aim'   ? aimR : targetR;
+  // 圓規臂（aim / trace / done 都顯示）
+  const compassPos = (dragPos || lastPos);
+  const compassR   = phase === 'aim' ? aimR : targetR;
   if (compassPos && compassR > 8) drawCompass(compassPos, compassR);
 
   // aim 時的公分提示
